@@ -12,6 +12,7 @@ require('./reaction_components/drag-droppable.js')
 require('./reaction_components/draggable.js')
 require('./reaction_components/droppable.js')
 require('./reaction_components/clickable.js')
+require('./reaction_components/activatable.js')
 
 /**
  * Super Hands component for A-Frame.
@@ -58,6 +59,18 @@ AFRAME.registerComponent('super-hands', {
         'pointdown', 'thumbdown', 'pointingend', 'pistolend',
         'thumbstickup', 'mouseup', 'touchend']
     },
+    activateStartButtons: {
+      default: ['gripdown', 'trackpaddown', 'triggerdown', 'gripclose',
+        'abuttondown', 'bbuttondown', 'xbuttondown', 'ybuttondown',
+        'pointup', 'thumbup', 'pointingstart', 'pistolstart',
+        'thumbstickdown', 'mousedown', 'touchstart']
+    },
+    activateEndButtons: {
+      default: ['gripup', 'trackpadup', 'triggerup', 'gripopen',
+        'abuttonup', 'bbuttonup', 'xbuttonup', 'ybuttonup',
+        'pointdown', 'thumbdown', 'pointingend', 'pistolend',
+        'thumbstickup', 'mouseup', 'touchend']
+    },
     interval: { default: 0 }
   },
 
@@ -82,6 +95,8 @@ AFRAME.registerComponent('super-hands', {
     this.DRAGOVER_EVENT = 'dragover-start'
     this.UNDRAGOVER_EVENT = 'dragover-end'
     this.DRAGDROP_EVENT = 'drag-drop'
+    this.ACTIVATE_EVENT = 'activate-start'
+    this.DEACTIVATE_EVENT = 'activate-end'
 
     // links to other systems/components
     this.otherSuperHand = null
@@ -106,6 +121,8 @@ AFRAME.registerComponent('super-hands', {
     this.onStretchEndButton = this.onStretchEndButton.bind(this)
     this.onDragDropStartButton = this.onDragDropStartButton.bind(this)
     this.onDragDropEndButton = this.onDragDropEndButton.bind(this)
+    this.onActivateStartButton = this.onActivateStartButton.bind(this)
+    this.onActivateEndButton = this.onActivateEndButton.bind(this)
     this.system.registerMe(this)
   },
 
@@ -286,6 +303,22 @@ AFRAME.registerComponent('super-hands', {
       }
     }
   },
+  onActivateStartButton: function (evt) {
+    const carried = this.state.get(this.GRAB_EVENT)
+    if (carried) {
+      if (!this.emitCancelable(carried, this.ACTIVATE_EVENT, {hand: this.el, buttonEvent: evt})) {
+        this.state.set(this.ACTIVATE_EVENT, carried)
+      }
+    }
+  },
+  onActivateEndButton: function (evt) {
+    const carried = this.state.get(this.GRAB_EVENT)
+    if (carried) {
+      if (!this.emitCancelable(carried, this.DEACTIVATE_EVENT, {hand: this.el, buttonEvent: evt})) {
+        this.state.delete(this.ACTIVATE_EVENT)
+      }
+    }
+  },
   processHitEl: function (hitEl, intersection) {
     const dist = intersection && intersection.distance
     const sects = this.hoverElsIntersections
@@ -439,6 +472,9 @@ AFRAME.registerComponent('super-hands', {
     this.data.dragDropStartButtons.forEach(b => {
       this.el.addEventListener(b, this.onDragDropStartButton)
     })
+    this.data.activateStartButtons.forEach(b => {
+      this.el.addEventListener(b, this.onActivateStartButton)
+    })
     this.data.dragDropEndButtons.forEach(b => {
       this.el.addEventListener(b, this.onDragDropEndButton)
     })
@@ -447,6 +483,9 @@ AFRAME.registerComponent('super-hands', {
     })
     this.data.grabEndButtons.forEach(b => {
       this.el.addEventListener(b, this.onGrabEndButton)
+    })
+    this.data.activateEndButtons.forEach(b => {
+      this.el.addEventListener(b, this.onActivateEndButton)
     })
   },
   unRegisterListeners: function (data) {
@@ -468,6 +507,9 @@ AFRAME.registerComponent('super-hands', {
     data.stretchStartButtons.forEach(b => {
       this.el.removeEventListener(b, this.onStretchStartButton)
     })
+    data.activateStartButtons.forEach(b => {
+      this.el.removeEventListener(b, this.onActivateStartButton)
+    })
     data.stretchEndButtons.forEach(b => {
       this.el.removeEventListener(b, this.onStretchEndButton)
     })
@@ -476,6 +518,9 @@ AFRAME.registerComponent('super-hands', {
     })
     data.dragDropEndButtons.forEach(b => {
       this.el.removeEventListener(b, this.onDragDropEndButton)
+    })
+    data.activateEndButtons.forEach(b => {
+      this.el.removeEventListener(b, this.onActivateEndButton)
     })
   },
   emitCancelable: function (target, name, detail) {
