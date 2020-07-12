@@ -166,6 +166,12 @@ AFRAME.registerComponent('super-hands', {
   })(),
   onGrabStartButton: function (evt) {
     let carried = this.state.get(this.GRAB_EVENT)
+
+    if (evt.detail.mouseTarget === "mouseright")
+      this.dispatchMouseEventAll('mousedown-right', this.el)
+    else if (evt.detail.mouseTarget === "mouseleft")
+      this.dispatchMouseEventAll('mousedown-left', this.el)
+
     this.dispatchMouseEventAll('mousedown', this.el)
     this.gehClicking = new Set(this.hoverEls)
     const detail = {
